@@ -26,12 +26,10 @@
             <div class="flex w-auto">
                 <div class="text-blue-900 my-auto font-black px-5">Welcome, {{ request.user.first_name }} (balance : {{request.user.account.balance}}) </div>
 
-                <a href="" class="mx-2 inline-block font-medium text-sm px-4 py-2 leading-none bg-blue-900 rounded text-white border-white hover:border-transparent hover:text-dark hover:bg-red-700 mt-4 lg:mt-0">Profile</a>
+                <a href="{% url "profile" %}" class="mx-2 inline-block font-medium text-sm px-4 py-2 leading-none bg-blue-900 rounded text-white border-white hover:border-transparent hover:text-dark hover:bg-red-700 mt-4 lg:mt-0">Profile</a>
                 <form method="POST" action="{% url 'logout' %}" style="display: inline;">
                     {% csrf_token %}
-                    <button type="submit" class="mx-2 inline-block font-medium text-sm px-4 py-2 leading-none bg-blue-900 rounded text-white border-white hover:border-transparent hover:text-dark hover:bg-red-700 mt-4 lg:mt-0">
-                        Logout
-                    </button>
+                    <button type="submit" class="mx-2 inline-block font-medium text-sm px-4 py-2 leading-none bg-blue-900 rounded text-white border-white hover:border-transparent hover:text-dark hover:bg-red-700 mt-4 lg:mt-0">Logout</button>
                 </form>
             </div>
         {% else %}
