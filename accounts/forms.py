@@ -1,19 +1,20 @@
 from django.contrib.auth.forms import UserCreationForm
 from django import forms
-from . constants import GENDER_TYPE
+from . constants import GENDER_TYPE, ACCOUNT_TYPE
 from django.contrib.auth.models import User
 from .models import UserBankAccount, UserAddress
 
 class UserRegistrationForm(UserCreationForm):
-    birth_day = forms.DateField(widget=forms.DateField(attrs={'type':'date'}))
-    gender = forms.CharField(max_length=10, choices=GENDER_TYPE)
+    birth_day = forms.DateField(widget=forms.DateInput(attrs={'type':'date'}))
+    gender = forms.ChoiceField(choices=GENDER_TYPE)
+    account_type = forms.ChoiceField(choices=ACCOUNT_TYPE)
     street_address = forms.CharField(max_length=100)
     city = forms.CharField(max_length=100)
     postal_code = forms.IntegerField()
     country = forms.CharField(max_length=100)
     class Meta:
         model = User
-        fields = ['username', 'password1', 'password2', 'first_name', 'last_name', 'email', 'account_type', 'birth_day' 'gender', 'postal_code', 'street_address' 'city', 'country']
+        fields = ['username', 'password1', 'password2', 'first_name', 'last_name', 'email', 'account_type', 'birth_day', 'gender', 'postal_code', 'street_address', 'city', 'country']
 
     def save(self, commit=True):
         our_user = super().save(commit=False)
