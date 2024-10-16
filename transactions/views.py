@@ -1,11 +1,13 @@
 from django.shortcuts import render
-from django.views.generic import CreateView
+from django.views.generic import CreateView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Transection
 from .forms import DepositForm, WithdrawForm, LoanRequestForm
 from .constants import DEPOSIT, WITHDRAWAL, LOAN, LOAN_PAID
 from django.contrib import messages
 from django.http import HttpResponse
+from datetime import datetime
+from django.db.models import Sum
 # Create your views here.
 class TransectionCreateMixin(LoginRequiredMixin, CreateView):
     template_name = ''
@@ -79,4 +81,34 @@ class LoanMoneyView(TransectionCreateMixin):
             return HttpResponse("You have crossed you loan limit")
         messages.success(self.request, f'loan request for {amount} BDT has been successfully sent to admin')
         return super().form_valid(form)
+
+class TransectionReportView(LoginRequiredMixin, ListView):
+    template_name = ""
+    model = Transection
+    balance = 0
+
+    def get_queryset(self):
+        queryset =  super().get_queryset().filter(
+            account = self.request.user.account
+        )
+
+        start_date_str = self.request.GET.get('start_date')
+        end_date_str = self.request.GET.get('end_date')
+
+        if start_date_str and end_date_str:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+
+            # queryset = queryset.filter(timestamp_date_gte = start_date, timestamp_date_lte = end_date)
+            self.balance = Transection.objects.filter(timestamp_date_gte = start_date, timestamp_date_lte = end_date).aggregate(Sum('amount'))['amount__sum']
+        else:
+            self.balance = self.request.user.account.balance
+
+        return queryset.distinct()
     
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'account' : self.request.user.account
+        })
+        return context
