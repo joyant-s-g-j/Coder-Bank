@@ -17,13 +17,13 @@ class TransectionForm(forms.ModelForm):
         self.instance.balance_after_transection = self.account.balance
         return super().save()
 
-class DepositeForm(TransectionForm):
+class DepositForm(TransectionForm):
     def clean_amount(self):
-        min_deposite_amount = 500
+        min_deposit_amount = 500
         amount = self.cleaned_data.get('amount')
-        if amount < min_deposite_amount:
+        if amount < min_deposit_amount:
             raise forms.ValidationError(
-                f'You need to deposit at least {min_deposite_amount} BDT'
+                f'You need to deposit at least {min_deposit_amount} BDT'
             )
         return amount
 
