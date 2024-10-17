@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import CreateView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Transection
@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from datetime import datetime
 from django.db.models import Sum
+from django.views import View
 # Create your views here.
 class TransectionCreateMixin(LoginRequiredMixin, CreateView):
     template_name = ''
@@ -99,7 +100,7 @@ class TransectionReportView(LoginRequiredMixin, ListView):
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
             end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
 
-            # queryset = queryset.filter(timestamp_date_gte = start_date, timestamp_date_lte = end_date)
+            queryset = queryset.filter(timestamp_date_gte = start_date, timestamp_date_lte = end_date)
             self.balance = Transection.objects.filter(timestamp_date_gte = start_date, timestamp_date_lte = end_date).aggregate(Sum('amount'))['amount__sum']
         else:
             self.balance = self.request.user.account.balance
@@ -112,3 +113,29 @@ class TransectionReportView(LoginRequiredMixin, ListView):
             'account' : self.request.user.account
         })
         return context
+    
+class PayLoanView(LoginRequiredMixin, View):
+    def get(self, request, loan_id):
+        loan = get_object_or_404(Transection, id=loan_id)
+
+        if loan.loan_approve:
+            user_account = loan.account
+            if loan.amount < user_account.balance:
+                user_account.balance -= loan.amount
+                loan.balance_after_transection = user_account.balance
+                user_account.save()
+                loan.transaction_type = LOAN_PAID
+                loan.save()
+            else:
+                messages.error(self.request, f"Loan amount is greater than available balance")
+                return redirect()
+        
+class LoanListView(LoginRequiredMixin, ListView):
+    model = Transection
+    template_name = ""
+    context_object_name = "loans"
+
+    def get_queryset(self):
+        user_account = self.request.user.account
+        queryset = Transection.objects.filter(account = user_account, transaction_type = LOAN)
+        return queryset
