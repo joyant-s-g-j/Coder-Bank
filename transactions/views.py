@@ -67,7 +67,7 @@ class WithdrawMoneyView(TransectionCreateMixin):
         messages.success(self.request, f'Successfully withdrawn {amount} BDT from you account successfully')
         return super().form_valid(form)
     
-class LoanMoneyView(TransectionCreateMixin):
+class LoanRequestView(TransectionCreateMixin):
     form_class = LoanRequestForm
     title = 'Request for loan'
 
