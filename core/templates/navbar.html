@@ -10,16 +10,16 @@
     <div class="w-full block flex-grow lg:flex lg:items-center lg:w-auto px-10">
         {% if request.user.is_authenticated %}
             <div class="text-md lg:flex-grow">
-                <a href="" class="block mt-4 lg:inline-block lg:mt-0 text-blue-900 hover:text-red-900 hover:font-black mr-4">
+                <a href="{% url 'transaction_report' %}" class="block mt-4 lg:inline-block lg:mt-0 text-blue-900 hover:text-red-900 hover:font-black mr-4">
                     Report
                 </a>
-                <a href="" class="block mt-4 lg:inline-block lg:mt-0 text-blue-900 hover:text-red-900 hover:font-black mr-4">
+                <a href="{% url 'deposit_money' %}" class="block mt-4 lg:inline-block lg:mt-0 text-blue-900 hover:text-red-900 hover:font-black mr-4">
                     Deposit
                 </a>
-                <a href="" class="block mt-4 lg:inline-block lg:mt-0 text-blue-900 hover:text-red-900 hover:font-black mr-4">
+                <a href="{% url 'withdraw_money' %}" class="block mt-4 lg:inline-block lg:mt-0 text-blue-900 hover:text-red-900 hover:font-black mr-4">
                     Withdraw
                 </a>
-                <a href="" class="block mt-4 lg:inline-block lg:mt-0 text-blue-900 hover:text-red-900 hover:font-black mr-4">
+                <a href="{% url 'loan_request' %}" class="block mt-4 lg:inline-block lg:mt-0 text-blue-900 hover:text-red-900 hover:font-black mr-4">
                     Loan Request
                 </a>
             </div>
@@ -35,10 +35,10 @@
         {% else %}
             <div class="text-md lg:flex-grow"></div>
             <div>
-                <a href="{% url "login" %}" class="mr-2 inline-block font-medium text-sm px-4 py-2 leading-none bg-blue-900 rounded text-white border-white hover:border-transparent hover:text-gray-800 hover:bg-red-700 mt-4 lg:mt-0">Login</a>
+                <a href="{% url "login" %}" class="mr-2 inline-block font-medium text-sm px-4 py-2 leading-none bg-blue-900 rounded text-white border-white hover:border-transparent hover:text-gray-800 hover:bg-blue-400 mt-4 lg:mt-0">Login</a>
             </div>
             <div>
-                <a href="{% url 'register' %}" class="inline-block font-medium text-sm px-4 py-2 leading-none bg-blue-900 rounded text-white border-white hover:border-transparent hover:text-gray-800 hover:bg-white mt-4 lg:mt-0">Register</a>
+                <a href="{% url 'register' %}" class="inline-block font-medium text-sm px-4 py-2 leading-none bg-blue-900 rounded text-white border-white hover:border-transparent hover:text-gray-800 hover:bg-blue-400 mt-4 lg:mt-0">Register</a>
             </div>
         {% endif %}
     </div>

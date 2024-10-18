@@ -3,7 +3,7 @@ WITHDRAWAL = 2
 LOAN = 3
 LOAN_PAID = 4
 
-TRANSECTION_TYPE = (
+TRANSACTION_TYPE = (
     (DEPOSIT, 'Deposite'),
     (WITHDRAWAL, 'Withdrawal'),
     (LOAN, 'Loan'),
