@@ -123,16 +123,17 @@ class PayLoanView(LoginRequiredMixin, View):
                 user_account.save()
                 loan.transaction_type = LOAN_PAID
                 loan.save()
-
-                messages.success(request, f'Loan of {loan.amount} BDT has been successfully paid off.')
+                return redirect('loan_list')
+                # messages.success(request, f'Loan of {loan.amount} BDT has been successfully paid off.')
             else:
-                messages.error(request, "Loan amount exceeds the available balance.")
+                messages.error(self.request, "Loan amount exceeds the available balance.")
+                return redirect('loan_list')
         
         return redirect('loan_list')
 
 class LoanListView(LoginRequiredMixin, ListView):
     model = Transaction
-    template_name = "transactions/loan_list.html"
+    template_name = "transactions/loan_request.html"
     context_object_name = "loans"
 
     def get_queryset(self):
