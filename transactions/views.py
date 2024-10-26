@@ -171,10 +171,18 @@ class MoneyTransferView(FormView):
         return kwargs
     
     def create_transaction(self, sender_account, recipient_account, amount):
+        # Create transaction for the sender
         Transaction.objects.create(
-            account = sender_account,
-            amount=amount,
+            account=sender_account,
+            amount=-amount,  # Negative amount for the sender
             balance_after_transaction=sender_account.balance,
+            transaction_type=TRANSFER
+        )
+        # Create transaction for the recipient
+        Transaction.objects.create(
+            account=recipient_account,
+            amount=amount,  # Positive amount for the recipient
+            balance_after_transaction=recipient_account.balance,
             transaction_type=TRANSFER
         )
     
@@ -196,15 +204,9 @@ class MoneyTransferView(FormView):
         recipient_account.save()
 
         self.create_transaction(
-            account=sender_account,
-            amount=-amount, 
-            transaction_type=TRANSFER
-        )
-
-        self.create_transaction(
-            account=recipient_account,
-            amount = amount,
-            transaction_type=TRANSFER
+            sender_account=sender_account,
+            recipient_account=recipient_account,
+            amount=amount
         )
 
         messages.success(self.request, f'Successfully transfer {amount} BDT')
