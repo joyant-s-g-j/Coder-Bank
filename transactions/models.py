@@ -12,3 +12,9 @@ class Transaction(models.Model):
 
     class Meta:
         ordering = ['timestamp']
+
+class Bank(models.Model):
+    bankrupt = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f'Bank status: {"Bankrupt" if self.bankrupt else "Operational"}'

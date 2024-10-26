@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Transaction
+from .models import Transaction, Bank
 # Register your models here.
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
@@ -12,3 +12,9 @@ class TransactionAdmin(admin.ModelAdmin):
 
             obj.account.save()
         super().save_model(request, obj, form, change)
+
+@admin.register(Bank)
+class BankAdmin(admin.ModelAdmin):
+    list_display = ('bankrupt',)
+    list_editable = ('bankrupt',)
+    list_display_links = None

@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import CreateView, ListView, FormView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import Transaction
+from .models import Transaction, Bank
 from .forms import DepositForm, WithdrawForm, LoanRequestForm, TransferForm
 from .constants import DEPOSIT, WITHDRAWAL, LOAN, LOAN_PAID, TRANSFER
 from django.contrib import messages
@@ -10,7 +10,7 @@ from datetime import datetime
 from django.db.models import Sum
 from django.views import View
 from django.urls import reverse_lazy
-from accounts.models import UserBankAccount
+
 
 class TransactionCreateMixin(LoginRequiredMixin, CreateView):
     template_name = 'transactions/transaction_form.html'
@@ -54,6 +54,10 @@ class WithdrawMoneyView(TransactionCreateMixin):
         return initial
     
     def form_valid(self, form):
+        bank = get_object_or_404(Bank, id=1)
+        if bank.bankrupt:
+            messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
+            return self.form_invalid(form)
         amount = form.cleaned_data.get('amount')
         account = self.request.user.account
         account.balance -= amount
@@ -71,6 +75,10 @@ class LoanRequestView(TransactionCreateMixin):
         return initial
     
     def form_valid(self, form):
+        bank = get_object_or_404(Bank, id=1)
+        if bank.bankrupt:
+            messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
+            return self.form_invalid(form)
         amount = form.cleaned_data.get('amount')
         current_loan_count = Transaction.objects.filter(
             account=self.request.user.account,
@@ -151,10 +159,6 @@ class MoneyTransferView(FormView):
     title = 'Money Transfer'
     success_url = reverse_lazy('transaction_report')
 
-    # def get_initial(self):
-    #     initial = super().get_initial()
-    #     initial['transaction_type'] = TRANSFER
-    #     return initial
     def get_initial(self):
         initial = {'transaction_type': TRANSFER}
         return initial
@@ -175,11 +179,16 @@ class MoneyTransferView(FormView):
         )
     
     def form_valid(self, form):
-        account_number = form.cleaned_data['account_number']
+        bank = get_object_or_404(Bank, id=1)
+        if bank.bankrupt:
+            messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
+            return self.form_invalid(form)
+        # account_number = form.cleaned_data['account_number']
+        
+        sender_account = self.request.user.account
         amount = form.cleaned_data['amount']
         recipient_account = form.cleaned_data['recipient_account']
         
-        sender_account = self.request.user.account
         sender_account.balance -= amount
         recipient_account.balance += amount
 
@@ -187,14 +196,20 @@ class MoneyTransferView(FormView):
         recipient_account.save()
 
         self.create_transaction(
-            sender_account=self.request.user.account,
-            recipient_account=recipient_account,
-            amount = amount
+            account=sender_account,
+            amount=-amount, 
+            transaction_type=TRANSFER
+        )
+
+        self.create_transaction(
+            account=recipient_account,
+            amount = amount,
+            transaction_type=TRANSFER
         )
 
         messages.success(self.request, f'Successfully transfer {amount} BDT')
         return super().form_valid(form)
         
-    def form_invalid(self, form):
-        messages.error(self.request, 'There was an error with your transfer')
-        return super().form_invalid(form)
+    # def form_invalid(self, form):
+    #     messages.error(self.request, 'There was an error with your transfer')
+    #     return super().form_invalid(form)

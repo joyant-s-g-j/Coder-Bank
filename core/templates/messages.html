@@ -1,5 +1,5 @@
 {% for message in messages %}
-<div class="{% if message.tags %}{{ message.tags }}{% endif %}bg-red-200 border-t-4 rounded-b px-4 py-3 shadow-md mt-2" role="alert">
+<div class="{% if message.tags %}{{ message.tags }}{% endif %} bg-red-200 border-t-4 rounded-b px-4 py-3 shadow-md mt-2" role="alert">
     <div class="flex">
         <div class="py-1">
             {% if message.tags == 'success' %}
