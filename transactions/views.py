@@ -1,15 +1,16 @@
 from django.shortcuts import get_object_or_404, redirect
-from django.views.generic import CreateView, ListView
+from django.views.generic import CreateView, ListView, FormView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Transaction
-from .forms import DepositForm, WithdrawForm, LoanRequestForm
-from .constants import DEPOSIT, WITHDRAWAL, LOAN, LOAN_PAID
+from .forms import DepositForm, WithdrawForm, LoanRequestForm, TransferForm
+from .constants import DEPOSIT, WITHDRAWAL, LOAN, LOAN_PAID, TRANSFER
 from django.contrib import messages
 from django.http import HttpResponse
 from datetime import datetime
 from django.db.models import Sum
 from django.views import View
 from django.urls import reverse_lazy
+from accounts.models import UserBankAccount
 
 class TransactionCreateMixin(LoginRequiredMixin, CreateView):
     template_name = 'transactions/transaction_form.html'
@@ -143,3 +144,57 @@ class LoanListView(LoginRequiredMixin, ListView):
             transaction_type=3
         )
         return queryset
+
+class MoneyTransferView(FormView):
+    template_name = 'transactions/transfer.html'
+    form_class = TransferForm
+    title = 'Money Transfer'
+    success_url = reverse_lazy('transaction_report')
+
+    # def get_initial(self):
+    #     initial = super().get_initial()
+    #     initial['transaction_type'] = TRANSFER
+    #     return initial
+    def get_initial(self):
+        initial = {'transaction_type': TRANSFER}
+        return initial
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.pop('instance', None)
+        kwargs.pop('account', None)
+        kwargs['sender_account'] = self.request.user.account
+        return kwargs
+    
+    def create_transaction(self, sender_account, recipient_account, amount):
+        Transaction.objects.create(
+            account = sender_account,
+            amount=amount,
+            balance_after_transaction=sender_account.balance,
+            transaction_type=TRANSFER
+        )
+    
+    def form_valid(self, form):
+        account_number = form.cleaned_data['account_number']
+        amount = form.cleaned_data['amount']
+        recipient_account = form.cleaned_data['recipient_account']
+        
+        sender_account = self.request.user.account
+        sender_account.balance -= amount
+        recipient_account.balance += amount
+
+        sender_account.save()
+        recipient_account.save()
+
+        self.create_transaction(
+            sender_account=self.request.user.account,
+            recipient_account=recipient_account,
+            amount = amount
+        )
+
+        messages.success(self.request, f'Successfully transfer {amount} BDT')
+        return super().form_valid(form)
+        
+    def form_invalid(self, form):
+        messages.error(self.request, 'There was an error with your transfer')
+        return super().form_invalid(form)
