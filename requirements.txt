@@ -2,6 +2,7 @@ asgiref
 certifi
 crispy-bootstrap5
 distlib
+dj-database-url
 Django
 django-crispy-forms
 django-email
@@ -25,5 +26,6 @@ PyScreeze
 pytweening
 setuptools
 sqlparse
+typing_extensions
 tzdata
 virtualenv
