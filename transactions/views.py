@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import CreateView, ListView, FormView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import Transaction, Bank
+from .models import Transaction
 from .forms import DepositForm, WithdrawForm, LoanRequestForm, TransferForm
 from .constants import DEPOSIT, WITHDRAWAL, LOAN, LOAN_PAID, TRANSFER
 from django.contrib import messages
@@ -10,7 +10,17 @@ from datetime import datetime
 from django.db.models import Sum
 from django.views import View
 from django.urls import reverse_lazy
+from django.core.mail import EmailMessage, EmailMultiAlternatives
+from django.template.loader import render_to_string
 
+def send_transaction_email(user, amount, subject, template):
+    message = render_to_string(template, {
+        'user' : user,
+        'amount' : amount,
+    })
+    send_email = EmailMultiAlternatives(subject, message, to=[user.email])
+    send_email.attach_alternative(message, "text/html")
+    send_email.send()
 
 class TransactionCreateMixin(LoginRequiredMixin, CreateView):
     template_name = 'transactions/transaction_form.html'
@@ -43,6 +53,16 @@ class DepositMoneyView(TransactionCreateMixin):
         account.save(update_fields=['balance'])
 
         messages.success(self.request, f'{amount} BDT was deposited to your account successfully.')
+        # mail_subject = 'Deposite Message'
+        # message = render_to_string('transactions/deposite_email.html', {
+        #     'user' : self.request.user,
+        #     'amount' : amount,
+        # })
+        # to_email = self.request.user.email
+        # send_email = EmailMultiAlternatives(mail_subject, message, to=[to_email])
+        # send_email.attach_alternative(message, "text/html")
+        # send_email.send()
+        send_transaction_email(self.request.user, amount, "Deposite Message", "transactions/deposite_email.html")
         return super().form_valid(form)
 
 class WithdrawMoneyView(TransactionCreateMixin):
@@ -54,16 +74,17 @@ class WithdrawMoneyView(TransactionCreateMixin):
         return initial
     
     def form_valid(self, form):
-        bank = get_object_or_404(Bank, id=1)
-        if bank.bankrupt:
-            messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
-            return self.form_invalid(form)
+        # bank = get_object_or_404(Bank)
+        # if bank.bankrupt:
+        #     messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
+        #     return self.form_invalid(form)
         amount = form.cleaned_data.get('amount')
         account = self.request.user.account
         account.balance -= amount
         account.save(update_fields=['balance'])
 
         messages.success(self.request, f'Successfully withdrawn {amount} BDT from your account.')
+        send_transaction_email(self.request.user, amount, "Withdrawal Message", "transactions/withdrawal_email.html")
         return super().form_valid(form)
     
 class LoanRequestView(TransactionCreateMixin):
@@ -75,10 +96,10 @@ class LoanRequestView(TransactionCreateMixin):
         return initial
     
     def form_valid(self, form):
-        bank = get_object_or_404(Bank, id=1)
-        if bank.bankrupt:
-            messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
-            return self.form_invalid(form)
+        # bank = get_object_or_404(Bank, id=1)
+        # if bank.bankrupt:
+        #     messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
+        #     return self.form_invalid(form)
         amount = form.cleaned_data.get('amount')
         current_loan_count = Transaction.objects.filter(
             account=self.request.user.account,
@@ -90,6 +111,7 @@ class LoanRequestView(TransactionCreateMixin):
             return HttpResponse("You have crossed your loan limit.")
         
         messages.success(self.request, f'Loan request for {amount} BDT has been successfully sent to admin.')
+        send_transaction_email(self.request.user, amount, "Loan Message", "transactions/loan_email.html")
         return super().form_valid(form)
 
 class TransactionReportView(LoginRequiredMixin, ListView):
@@ -121,6 +143,7 @@ class TransactionReportView(LoginRequiredMixin, ListView):
         return context
     
 class PayLoanView(LoginRequiredMixin, View):
+    title = 'Loan List'
     def get(self, request, loan_id):
         loan = get_object_or_404(Transaction, id=loan_id)
 
@@ -132,8 +155,10 @@ class PayLoanView(LoginRequiredMixin, View):
                 user_account.save()
                 loan.transaction_type = LOAN_PAID
                 loan.save()
+                send_transaction_email(self.request.user, loan.amount, "Loan Paid Message", "transactions/loan_paid_email.html")
                 return redirect('loan_list')
                 # messages.success(request, f'Loan of {loan.amount} BDT has been successfully paid off.')
+
             else:
                 messages.error(self.request, "Loan amount exceeds the available balance.")
                 return redirect('loan_list')
@@ -187,10 +212,10 @@ class MoneyTransferView(FormView):
         )
     
     def form_valid(self, form):
-        bank = get_object_or_404(Bank, id=1)
-        if bank.bankrupt:
-            messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
-            return self.form_invalid(form)
+        # bank = get_object_or_404(Bank, id=1)
+        # if bank.bankrupt:
+        #     messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
+        #     return self.form_invalid(form)
         # account_number = form.cleaned_data['account_number']
         
         sender_account = self.request.user.account
