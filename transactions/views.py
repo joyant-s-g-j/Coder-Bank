@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import CreateView, ListView, FormView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import Transaction
+from .models import Transaction, Bank
 from .forms import DepositForm, WithdrawForm, LoanRequestForm, TransferForm
 from .constants import DEPOSIT, WITHDRAWAL, LOAN, LOAN_PAID, TRANSFER
 from django.contrib import messages
@@ -10,7 +10,7 @@ from datetime import datetime
 from django.db.models import Sum
 from django.views import View
 from django.urls import reverse_lazy
-from django.core.mail import EmailMessage, EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 
 def send_transaction_email(user, amount, subject, template):
@@ -74,10 +74,10 @@ class WithdrawMoneyView(TransactionCreateMixin):
         return initial
     
     def form_valid(self, form):
-        # bank = get_object_or_404(Bank)
-        # if bank.bankrupt:
-        #     messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
-        #     return self.form_invalid(form)
+        bank = get_object_or_404(Bank)
+        if bank.bankrupt:
+            messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
+            return self.form_invalid(form)
         amount = form.cleaned_data.get('amount')
         account = self.request.user.account
         account.balance -= amount
@@ -96,10 +96,10 @@ class LoanRequestView(TransactionCreateMixin):
         return initial
     
     def form_valid(self, form):
-        # bank = get_object_or_404(Bank, id=1)
-        # if bank.bankrupt:
-        #     messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
-        #     return self.form_invalid(form)
+        bank = get_object_or_404(Bank, id=1)
+        if bank.bankrupt:
+            messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
+            return self.form_invalid(form)
         amount = form.cleaned_data.get('amount')
         current_loan_count = Transaction.objects.filter(
             account=self.request.user.account,
@@ -196,31 +196,37 @@ class MoneyTransferView(FormView):
         return kwargs
     
     def create_transaction(self, sender_account, recipient_account, amount):
-        # Create transaction for the sender
+        
         Transaction.objects.create(
             account=sender_account,
-            amount=-amount,  # Negative amount for the sender
+            amount=-amount,  
             balance_after_transaction=sender_account.balance,
             transaction_type=TRANSFER
         )
-        # Create transaction for the recipient
+        
         Transaction.objects.create(
             account=recipient_account,
-            amount=amount,  # Positive amount for the recipient
+            amount=amount,  
             balance_after_transaction=recipient_account.balance,
             transaction_type=TRANSFER
         )
     
     def form_valid(self, form):
-        # bank = get_object_or_404(Bank, id=1)
-        # if bank.bankrupt:
-        #     messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
-        #     return self.form_invalid(form)
-        # account_number = form.cleaned_data['account_number']
-        
+        bank = get_object_or_404(Bank, id=1)
+        if bank.bankrupt:
+            messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
+            return self.form_invalid(form)
+        account_number = form.cleaned_data['account_number']
+
         sender_account = self.request.user.account
         amount = form.cleaned_data['amount']
         recipient_account = form.cleaned_data['recipient_account']
+        
+        if sender_account == recipient_account:
+            # raise forms.ValidationError("Same account money transfer cannot be possible")
+            messages.error(self.request, "Same account money transfer cannot be possible")
+            return self.form_invalid(form)
+        
         
         sender_account.balance -= amount
         recipient_account.balance += amount
@@ -235,8 +241,10 @@ class MoneyTransferView(FormView):
         )
 
         messages.success(self.request, f'Successfully transfer {amount} BDT')
+        send_transaction_email(self.request.user, amount, "Balance Transfer Message", "transactions/balance_transfer_sender.html")
+        send_transaction_email(recipient_account.user, amount, "Balance Added Message", "transactions/balance_transfer_receiver.html")
         return super().form_valid(form)
         
-    # def form_invalid(self, form):
-    #     messages.error(self.request, 'There was an error with your transfer')
-    #     return super().form_invalid(form)
+    def form_invalid(self, form):
+        # messages.error(self.request, 'There was an error with your transfer')
+        return super().form_invalid(form)

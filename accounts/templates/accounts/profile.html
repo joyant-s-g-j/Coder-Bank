@@ -114,11 +114,17 @@
                     {% endfor %} {% endif %}
                 </div>
             </div>
-            <div class="flex items-center justify-between">
+            <div class="flex items-center">
                 <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
                     Update
                 </button>
+                <div>
+                    <a href="{% url 'passchange' %}" class="inline-block font-bold px-4 py-2 leading-none bg-blue-500 hover:bg-blue-700 text-white rounded focus:outline-none focus:shadow-outline ml-2">
+                        PassChange
+                    </a>
+                </div>
             </div>
+            
         </form>
     </div>
 </div>

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load static %}
+{% block body %}
+
+<div class="flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">Change Your Password</h1>
+        
+        <form method="post" class="px-8 pt-6 pb-8 mb-4">
+            {% csrf_token %}
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="old_password">
+                    Current Password
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight border-gray-500 focus:outline-none focus:shadow-outline" name="old_password" id="old_password" type="password" required placeholder="Enter current password">
+                {% if form.old_password.errors %}
+                    {% for error in form.old_password.errors %}
+                        <p class="text-red-600 text-sm italic pb-2">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="new_password1">
+                    New Password
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight border-gray-500 focus:outline-none focus:shadow-outline" name="new_password1" id="new_password1" type="password" required placeholder="Enter new password">
+                {% if form.new_password1.errors %}
+                    {% for error in form.new_password1.errors %}
+                        <p class="text-red-600 text-sm italic pb-2">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="new_password2">
+                    Confirm New Password
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight border-gray-500 focus:outline-none focus:shadow-outline" name="new_password2" id="new_password2" type="password" required placeholder="Confirm new password">
+                {% if form.new_password2.errors %}
+                    {% for error in form.new_password2.errors %}
+                        <p class="text-red-600 text-sm italic pb-2">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="flex w-full justify-center">
+                <button class="bg-blue-900 text-white hover:text-blue-900 hover:bg-white border border-blue-900 font-bold px-4 py-2 rounded-lg" type="submit">
+                    Update Password
+                </button>
+            </div>
+        </form>
+        
+        <div class="text-center mt-4">
+            <a href="{% url 'profile' %}" class="text-sm text-blue-500 hover:underline">Back to Profile</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
