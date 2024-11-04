@@ -196,6 +196,10 @@ class MoneyTransferView(FormView):
         return kwargs
     
     def create_transaction(self, sender_account, recipient_account, amount):
+        sender_account.balance -= amount
+        recipient_account.balance += amount
+        sender_account.save()
+        recipient_account.save()
         
         Transaction.objects.create(
             account=sender_account,
@@ -212,27 +216,24 @@ class MoneyTransferView(FormView):
         )
     
     def form_valid(self, form):
-        bank = get_object_or_404(Bank, id=1)
+        bank, created = Bank.objects.get_or_create(id=1)
+
         if bank.bankrupt:
             messages.error(self.request, 'The bank is bankrupt. No transfers or withdrawals allowed.')
             return self.form_invalid(form)
-        account_number = form.cleaned_data['account_number']
 
+        account_number = form.cleaned_data['account_number']
         sender_account = self.request.user.account
         amount = form.cleaned_data['amount']
         recipient_account = form.cleaned_data['recipient_account']
-        
-        if sender_account == recipient_account:
-            # raise forms.ValidationError("Same account money transfer cannot be possible")
-            messages.error(self.request, "Same account money transfer cannot be possible")
-            return self.form_invalid(form)
-        
-        
-        sender_account.balance -= amount
-        recipient_account.balance += amount
 
-        sender_account.save()
-        recipient_account.save()
+        if sender_account == recipient_account:
+            messages.error(self.request, "Same account money transfer cannot be possible.")
+            return self.form_invalid(form)
+
+        if amount <= 0 or sender_account.balance < amount: 
+            messages.error(self.request, "Insufficient balance or invalid transfer amount.")
+            return self.form_invalid(form)
 
         self.create_transaction(
             sender_account=sender_account,
@@ -240,11 +241,10 @@ class MoneyTransferView(FormView):
             amount=amount
         )
 
-        messages.success(self.request, f'Successfully transfer {amount} BDT')
+        messages.success(self.request, f'Successfully transferred {amount} BDT.')
         send_transaction_email(self.request.user, amount, "Balance Transfer Message", "transactions/balance_transfer_sender.html")
         send_transaction_email(recipient_account.user, amount, "Balance Added Message", "transactions/balance_transfer_receiver.html")
         return super().form_valid(form)
         
     def form_invalid(self, form):
-        # messages.error(self.request, 'There was an error with your transfer')
         return super().form_invalid(form)
